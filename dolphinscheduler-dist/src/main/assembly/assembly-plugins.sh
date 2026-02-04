@@ -20,14 +20,13 @@ set -xeo pipefail
 PLUGINS_ASSEMBLY_SKIP=$1
 
 DIST_DIR="$(pwd)/target"
-BIN_TAR_FILE="$DIST_DIR/apache-dolphinscheduler-*-bin.tar.gz"
-if [ ! -f $BIN_TAR_FILE ]; then
-  echo "$BIN_TAR_FILE not found!!!"
+BIN_DIR="$DIST_DIR/apache-dolphinscheduler-*-bin"
+if [ ! -d $BIN_DIR ]; then
+  echo "$BIN_DIR not found!!!"
   exit 1
 fi
 
-cd $DIST_DIR && tar -zxf apache-dolphinscheduler-*-bin.tar.gz
-cd $DIST_DIR/apache-dolphinscheduler-*-bin
+cd $BIN_DIR
 BIN_DIR=$(pwd)
 
 # move *-plugins/target/*-plugin/target/*.jar to *-plugins/
@@ -59,26 +58,34 @@ tools
 )
 
 SHARED_LIB_DIR="$BIN_DIR/libs"
-mkdir -p $SHARED_LIB_DIR
+mkdir -p "$SHARED_LIB_DIR"
 
-for module in ${MODULES_PATH[@]}
-do
-  MODULE_LIB_DIR="$BIN_DIR/$module/libs"
-  cd $MODULE_LIB_DIR
-  for jar in $(find $MODULE_LIB_DIR/* -name "*.jar" -execdir echo {} ';'); do
-    # move jar file to share lib directory
-    mv $MODULE_LIB_DIR/$jar $SHARED_LIB_DIR/$jar
+for module in "${MODULES_PATH[@]}"; do
+    MODULE_LIB_DIR="$BIN_DIR/$module/libs"
+    [ ! -d "$MODULE_LIB_DIR" ] && continue
+    cd "$MODULE_LIB_DIR" || continue
 
-    # create a symbolic link in the subproject's lib directory
-    ln -s ../../libs/$jar $jar
-  done
+    local_jars=()
+    for jar in *.jar; do
+        [ -f "$jar" ] && local_jars+=("$jar")
+    done
+    [ ${#local_jars[@]} -eq 0 ] && continue
+
+    tar -cf - "${local_jars[@]}" | tar -xf - -C "$SHARED_LIB_DIR"
+
+    rm -f "${local_jars[@]}
+
+    for jar_name in "${local_jars[@]}"; do
+        ln -s ../../libs/"$jar_name" "$jar_name"
+    done
 done
 
 # create symbolic link for standalone-server
 cd $BIN_DIR/standalone-server && ln -s ../tools/sql/sql sql
 
 # repack bin tar
-BIN_TAR_FILE_NAME=$(basename $BIN_TAR_FILE)
-cd $DIST_DIR && tar -zcf $BIN_TAR_FILE_NAME apache-dolphinscheduler-*-bin
+BIN_DIR_NAME=$(basename $BIN_DIR)
+BIN_TAR_FILE_NAME=$BIN_DIR_NAME.tar.gz
+cd $DIST_DIR && tar -zcf $BIN_TAR_FILE_NAME $BIN_DIR_NAME
 
 echo "assembly-plugins.sh done"
