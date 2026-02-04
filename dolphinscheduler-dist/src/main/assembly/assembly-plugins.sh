@@ -73,7 +73,7 @@ for module in "${MODULES_PATH[@]}"; do
 
     tar -cf - "${local_jars[@]}" | tar -xf - -C "$SHARED_LIB_DIR"
 
-    rm -f "${local_jars[@]}
+    rm -f "${local_jars[@]}"
 
     for jar_name in "${local_jars[@]}"; do
         ln -s ../../libs/"$jar_name" "$jar_name"
