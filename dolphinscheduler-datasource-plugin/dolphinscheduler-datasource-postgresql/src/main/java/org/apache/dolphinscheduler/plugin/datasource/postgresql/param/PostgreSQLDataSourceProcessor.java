@@ -23,7 +23,6 @@ import org.apache.dolphinscheduler.plugin.datasource.api.constants.DataSourceCon
 import org.apache.dolphinscheduler.plugin.datasource.api.datasource.AbstractDataSourceProcessor;
 import org.apache.dolphinscheduler.plugin.datasource.api.datasource.BaseDataSourceParamDTO;
 import org.apache.dolphinscheduler.plugin.datasource.api.datasource.DataSourceProcessor;
-import org.apache.dolphinscheduler.plugin.datasource.api.datasource.JdbcDriverConnectionProvider;
 import org.apache.dolphinscheduler.plugin.datasource.api.utils.PasswordUtils;
 import org.apache.dolphinscheduler.spi.datasource.BaseConnectionParam;
 import org.apache.dolphinscheduler.spi.datasource.ConnectionParam;
@@ -54,6 +53,8 @@ public class PostgreSQLDataSourceProcessor extends AbstractDataSourceProcessor {
         PostgreSQLDataSourceParamDTO postgreSqlDatasourceParamDTO = new PostgreSQLDataSourceParamDTO();
         postgreSqlDatasourceParamDTO.setDatabase(connectionParams.getDatabase());
         postgreSqlDatasourceParamDTO.setUserName(connectionParams.getUser());
+        postgreSqlDatasourceParamDTO.setDriverClassName(connectionParams.getDriverClassName());
+        postgreSqlDatasourceParamDTO.setDriverJarName(connectionParams.getDriverJarName());
         postgreSqlDatasourceParamDTO.setOther(connectionParams.getOther());
 
         String address = connectionParams.getAddress();
@@ -78,7 +79,17 @@ public class PostgreSQLDataSourceProcessor extends AbstractDataSourceProcessor {
         postgreSqlConnectionParam.setDatabase(postgreSqlParam.getDatabase());
         postgreSqlConnectionParam.setUser(postgreSqlParam.getUserName());
         postgreSqlConnectionParam.setPassword(PasswordUtils.encodePassword(postgreSqlParam.getPassword()));
-        postgreSqlConnectionParam.setDriverClassName(getDatasourceDriver());
+
+        // Use custom driver class name if specified, otherwise use default
+        String driverClassName = postgreSqlParam.getDriverClassName();
+        if (driverClassName == null || driverClassName.trim().isEmpty()) {
+            driverClassName = getDatasourceDriver();
+        }
+        postgreSqlConnectionParam.setDriverClassName(driverClassName);
+
+        // Set driver JAR name if specified
+        postgreSqlConnectionParam.setDriverJarName(postgreSqlParam.getDriverJarName());
+
         postgreSqlConnectionParam.setValidationQuery(getValidationQuery());
         postgreSqlConnectionParam.setOther(postgreSqlParam.getOther());
 
@@ -112,14 +123,7 @@ public class PostgreSQLDataSourceProcessor extends AbstractDataSourceProcessor {
 
     @Override
     public Connection getConnection(ConnectionParam connectionParam) throws SQLException {
-        PostgreSQLConnectionParam postgreSqlConnectionParam = (PostgreSQLConnectionParam) connectionParam;
-        return JdbcDriverConnectionProvider.builder()
-                .jdbcDriverClassName(getDatasourceDriver())
-                .jdbcUrl(getJdbcUrl(postgreSqlConnectionParam))
-                .username(postgreSqlConnectionParam.getUser())
-                .password(PasswordUtils.decodePassword(postgreSqlConnectionParam.getPassword()))
-                .build()
-                .getConnection();
+        return getConnectionWithDriver(connectionParam, getDatasourceDriver());
     }
 
     @Override

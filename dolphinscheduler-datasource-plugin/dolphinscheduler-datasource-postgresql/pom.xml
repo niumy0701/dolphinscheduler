@@ -51,14 +51,54 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- PostgreSQL 最新版本驱动 (默认使用) -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <version>42.7.8</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- PostgreSQL 兼容版本驱动 (支持旧版本) -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.6.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- PostgreSQL 稳定版本驱动 (长期支持) -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.5.6</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!-- 复制驱动JAR文件到driver/postgresql目录 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-drivers</id>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/driver/postgresql</outputDirectory>
+                            <includeScope>provided</includeScope>
+                            <includeArtifactIds>postgresql</includeArtifactIds>
+                            <stripVersion>false</stripVersion>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
