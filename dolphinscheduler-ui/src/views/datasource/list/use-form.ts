@@ -215,15 +215,7 @@ export function useForm(id?: number) {
           // Driver class name is optional, no mandatory validation required
           return true
         }
-      },
-      // databaseUserName: {
-      //   trigger: ['input'],
-      //   validator() {
-      //     if (!state.detailForm.userName) {
-      //       return new Error(t('datasource.user_name_tips'))
-      //     }
-      //   }
-      // },
+      }
     } as FormRules,
     modeOptions: [
       {
